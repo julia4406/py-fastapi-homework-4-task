@@ -47,10 +47,7 @@ from security.interfaces import JWTAuthManagerInterface
 
 
 router = APIRouter()
-API_URL = "/api/v1/accounts"
 
-def get_url(relative_link: str):
-    return f"{API_URL}{relative_link}"
 
 @router.post(
     "/register/",
@@ -84,7 +81,6 @@ def get_url(relative_link: str):
 async def register_user(
         user_data: UserRegistrationRequestSchema,
         background_tasks: BackgroundTasks,
-        request: Request,
         email_sender: EmailSenderInterface = Depends(
             get_accounts_email_notificator
         ),
@@ -142,12 +138,14 @@ async def register_user(
         await db.commit()
         await db.refresh(new_user)
 
-        activation_link = str(request.url_for("activate_account"))
+        # link_to_route = BASE_URL + request.app.router.url_path_for("activate_account")
+        link_to_route = "http://127.0.0.1/accounts/activate/"
         background_tasks.add_task(
             email_sender.send_activation_email,
-            str(user_data.email),
-            get_url(activation_link)
+            str(new_user.email),
+            link_to_route
         )
+
 
     except SQLAlchemyError as e:
         await db.rollback()
@@ -252,11 +250,11 @@ async def activate_account(
     await db.delete(token_record)
     await db.commit()
 
-    login_link = str(request.url_for("login_user"))
+    login_link = "http://127.0.0.1/accounts/login/"
     background_tasks.add_task(
         email_sender.send_activation_complete_email,
         str(activation_data.email),
-        get_url(login_link)
+        login_link
     )
 
     return MessageResponseSchema(message="User account activated successfully.")
@@ -309,11 +307,11 @@ async def request_password_reset_token(
     db.add(reset_token)
     await db.commit()
 
-    reset_password_link = str(request.url_for("reset_password"))
+    login_link = "http://127.0.0.1/accounts/reset-password/complete/"
     background_tasks.add_task(
         email_sender.send_password_reset_email,
         str(data.email),
-        get_url(reset_password_link)
+        login_link
     )
 
     return MessageResponseSchema(
@@ -428,11 +426,11 @@ async def reset_password(
         await db.run_sync(lambda s: s.delete(token_record))
         await db.commit()
 
-        login_link = str(request.url_for("login_user"))
+        login_link = "http://127.0.0.1/accounts/login/"
         background_tasks.add_task(
             email_sender.send_password_reset_complete_email,
             str(data.email),
-            get_url(login_link)
+            login_link
         )
     except SQLAlchemyError:
         await db.rollback()
