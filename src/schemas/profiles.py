@@ -95,7 +95,6 @@ class ProfileCreateSchema(BaseModel):
                 detail=str(e)
             )
 
-
     @field_validator("info")
     def info_validator(cls, value):
         if value.strip():
