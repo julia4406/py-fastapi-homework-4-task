@@ -146,7 +146,6 @@ async def register_user(
             link_to_route
         )
 
-
     except SQLAlchemyError as e:
         await db.rollback()
         raise HTTPException(
